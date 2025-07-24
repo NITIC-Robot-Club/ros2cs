@@ -28,6 +28,7 @@ find_package(ros2cs_common REQUIRED)
 find_package(ament_cmake_export_assemblies REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(dotnet_cmake_module REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 set(CSHARP_TARGET_FRAMEWORK "netstandard2.0")
 set(CSBUILD_TOOL "DotNetCore")
