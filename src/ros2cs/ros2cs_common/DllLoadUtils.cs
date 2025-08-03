@@ -28,7 +28,7 @@ namespace ROS2
   }
 
   public enum Platform {
-    And
+    And,
     Unix,
     MacOSX,
     WindowsDesktop,
@@ -49,11 +49,17 @@ namespace ROS2
     [DllImport ("kernel32.dll", EntryPoint = "FreeLibrary", SetLastError = true)]
     private static extern int FreeLibraryDesktop (IntPtr handle);
 
-    [DllImport ("libdl.so", EntryPoint = "dlopen")]
+    [DllImport ("libdl.so.2", EntryPoint = "dlopen")]
     private static extern IntPtr dlopen_unix (String fileName, int flags);
 
-    [DllImport ("libdl.so", EntryPoint = "dlclose")]
+    [DllImport ("libdl.so.2", EntryPoint = "dlclose")]
     private static extern int dlclose_unix (IntPtr handle);
+
+    [DllImport ("libdl.so", EntryPoint = "dlopen")]
+    private static extern IntPtr dlopen_and (String fileName, int flags);
+
+    [DllImport ("libdl.so", EntryPoint = "dlclose")]
+    private static extern int dlclose_and (IntPtr handle);
 
     [DllImport ("libdl.dylib", EntryPoint = "dlopen")]
     private static extern IntPtr dlopen_macosx (String fileName, int flags);
@@ -67,14 +73,14 @@ namespace ROS2
       switch (CheckPlatform ()) {
         case Platform.Unix:
           return new DllLoadUtilsUnix ();
+        case Platform.And:
+          return new DllLoadUtilsAnd ();
         case Platform.MacOSX:
           return new DllLoadUtilsMacOSX ();
         case Platform.WindowsDesktop:
           return new DllLoadUtilsWindowsDesktop ();
         case Platform.UWP:
           return new DllLoadUtilsUWP ();
-        case Platform.And:
-          return new DllLoadUtilsAnd ();
         case Platform.Unknown:
         default:
           throw new UnknownPlatformError ();
@@ -103,18 +109,8 @@ namespace ROS2
 
     private static bool IsUnix () {
       try {
-        IntPtr ptr = dlopen_unix ("libdl.so", RTLD_NOW);
+        IntPtr ptr = dlopen_unix ("libdl.so.2", RTLD_NOW);
         dlclose_unix (ptr);
-        return true;
-      } catch (TypeLoadException) {
-        return false;
-      }
-    }
-
-    private static bool IsMacOSX () {
-      try {
-        IntPtr ptr = dlopen_macosx ("libdl.dylib", RTLD_NOW);
-        dlclose_macosx (ptr);
         return true;
       } catch (TypeLoadException) {
         return false;
@@ -131,10 +127,24 @@ namespace ROS2
       }
     }
 
+    private static bool IsMacOSX () {
+      try {
+        IntPtr ptr = dlopen_macosx ("libdl.dylib", RTLD_NOW);
+        dlclose_macosx (ptr);
+        return true;
+      } catch (TypeLoadException) {
+        return false;
+      }
+    }
+
     private static Platform CheckPlatform () {
           if (IsUnix())
           {
               return Platform.Unix;
+          }
+          else if (IsAnd())
+          {
+              return Platform.And;
           }
           else if (IsMacOSX())
           {
@@ -147,10 +157,6 @@ namespace ROS2
           else if (IsUWP())
           {
               return Platform.UWP;
-          }
-          else if (IsAnd())
-          {
-              return Platform.And;
           }
           else
           {
@@ -327,18 +333,18 @@ namespace ROS2
     }
   }
 
-  internal class DllLoadUtilsAnd : DllLoadUtils {
+  internal class DllLoadUtilsUnix : DllLoadUtils {
 
-    [DllImport ("libdl.so", ExactSpelling = true)]
+    [DllImport ("libdl.so.2", ExactSpelling = true)]
     private static extern IntPtr dlopen (String fileName, int flags);
 
-    [DllImport ("libdl.so", ExactSpelling = true)]
+    [DllImport ("libdl.so.2", ExactSpelling = true)]
     private static extern IntPtr dlsym (IntPtr handle, String symbol);
 
-    [DllImport ("libdl.so", ExactSpelling = true)]
+    [DllImport ("libdl.so.2", ExactSpelling = true)]
     private static extern int dlclose (IntPtr handle);
 
-    [DllImport ("libdl.so", ExactSpelling = true)]
+    [DllImport ("libdl.so.2", ExactSpelling = true)]
     private static extern IntPtr dlerror ();
 
     const int RTLD_NOW = 0x00002;
